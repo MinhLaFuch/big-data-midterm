@@ -1,0 +1,97 @@
+version: "3.8"
+
+networks:
+  hadoop_net:
+    driver: bridge
+
+services:
+  namenode:
+    build: .
+    container_name: namenode
+    hostname: namenode
+    environment:
+      - NODE_TYPE=namenode
+    ports:
+      - "9870:9870"   # HDFS Web UI
+      - "9000:9000"   # HDFS IPC
+      - "8088:8088"   # YARN ResourceManager Web UI
+      - "19888:19888" # MapReduce Job History
+    volumes:
+      - namenode_data:/hadoop/dfs/name
+    networks:
+      - hadoop_net
+    restart: unless-stopped
+
+  secondarynamenode:
+    build: .
+    container_name: secondarynamenode
+    hostname: secondarynamenode
+    environment:
+      - NODE_TYPE=secondarynamenode
+    ports:
+      - "9868:9868"   # Secondary NameNode Web UI
+    volumes:
+      - secondarynamenode_data:/hadoop/dfs/secondary
+    networks:
+      - hadoop_net
+    depends_on:
+      - namenode
+    restart: unless-stopped
+
+  datanode1:
+    build: .
+    container_name: datanode1
+    hostname: datanode1
+    environment:
+      - NODE_TYPE=datanode
+    ports:
+      - "9864:9864"   # DataNode Web UI
+      - "8042:8042"   # NodeManager Web UI
+    volumes:
+      - datanode1_data:/hadoop/dfs/data
+    networks:
+      - hadoop_net
+    depends_on:
+      - namenode
+    restart: unless-stopped
+
+  datanode2:
+    build: .
+    container_name: datanode2
+    hostname: datanode2
+    environment:
+      - NODE_TYPE=datanode
+    ports:
+      - "9865:9864"
+      - "8043:8042"
+    volumes:
+      - datanode2_data:/hadoop/dfs/data
+    networks:
+      - hadoop_net
+    depends_on:
+      - namenode
+    restart: unless-stopped
+
+  datanode3:
+    build: .
+    container_name: datanode3
+    hostname: datanode3
+    environment:
+      - NODE_TYPE=datanode
+    ports:
+      - "9866:9864"
+      - "8044:8042"
+    volumes:
+      - datanode3_data:/hadoop/dfs/data
+    networks:
+      - hadoop_net
+    depends_on:
+      - namenode
+    restart: unless-stopped
+
+volumes:
+  namenode_data:
+  secondarynamenode_data:
+  datanode1_data:
+  datanode2_data:
+  datanode3_data:
