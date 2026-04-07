@@ -18,6 +18,7 @@ services:
       - "19888:19888" # MapReduce Job History
     volumes:
       - namenode_data:/hadoop/dfs/name
+      - ./data:/data
     networks:
       - hadoop_net
     restart: unless-stopped
