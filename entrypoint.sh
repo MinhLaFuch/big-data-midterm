@@ -1,12 +1,16 @@
 #!/bin/bash
+set -e
 
 # Start SSH daemon
+echo "[entrypoint] Starting SSH daemon..."
 service ssh start
 
 # Set PDSH to use SSH
 echo "ssh" > /etc/pdsh/rcmd_default
 
+# Get node type from environment variable
 NODE_TYPE=${NODE_TYPE:-namenode}
+echo "[entrypoint] NODE_TYPE=$NODE_TYPE"
 
 case "$NODE_TYPE" in
   namenode)
