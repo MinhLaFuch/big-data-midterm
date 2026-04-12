@@ -55,10 +55,11 @@ public class task3 {
                 String[] parts = value.toString().split(",");
                 if (parts.length < 2) return;
 
-                List<String> items = new ArrayList<>();
+                Set<String> uniqueItems = new HashSet<>();
                 for (int i = 1; i < parts.length; i++) {
-                    items.add(parts[i].trim());
+                    uniqueItems.add(parts[i].trim());
                 }
+                List<String> items = new ArrayList<>(uniqueItems);
 
                 // Count each individual item
                 for (String item : items) {
@@ -158,14 +159,14 @@ public class task3 {
                 String[] parts = value.toString().split(",");
                 if (parts.length < 2) return;
 
-                List<String> items = new ArrayList<>();
+                Set<String> uniqueItems = new HashSet<>();
                 for (int i = 1; i < parts.length; i++) {
                     String item = parts[i].trim();
-                    // Only keep frequent items
                     if (frequentItems.isEmpty() || frequentItems.contains(item)) {
-                        items.add(item);
+                        uniqueItems.add(item);
                     }
                 }
+                List<String> items = new ArrayList<>(uniqueItems);
 
                 // Only emit pairs that pass the bitmap filter
                 for (int i = 0; i < items.size(); i++) {

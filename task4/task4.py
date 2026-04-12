@@ -197,19 +197,19 @@ generator = AssociationRuleGenerator(
 # Run the pipeline
 print("\n=== Step 1: Generate candidate rules ===")
 rules = generator.generateRules()
-rules.show()
+rules.show(truncate=False)
 
 print("\n=== Step 2: Filter by confidence ===")
 rules_conf = generator.computeConfidence()
-rules_conf.show()
+rules_conf.show(truncate=False)
 
 print("\n=== Step 3: Filter by interest ===")
 rules_final = generator.computeInterest()
-rules_final.show()
+rules_final.show(truncate=False)
 
 print("\n=== Step 4: Recommend items for a user who bought ['beef'] ===")
 recommendations = generator.transform(["beef"])
-recommendations.show()
+recommendations.show(truncate=False)
 
 # Save final rules
 rules_final.write.mode("overwrite").csv("output/association_rules")

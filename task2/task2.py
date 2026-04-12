@@ -307,7 +307,7 @@ f3_df = (
     .orderBy("month", F.col("count").desc())
 )
 print("\n=== f3 DataFrame: Frequent pairs per month ===")
-f3_df.show()
+f3_df.show(20, truncate=False)
 f3_df.write.mode("overwrite").csv("output/f3_df")
 
 # f4 with DataFrame
