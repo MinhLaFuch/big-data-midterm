@@ -12,16 +12,18 @@ services:
     environment:
       - NODE_TYPE=namenode
     ports:
-      - "9870:9870"   # HDFS Web UI
-      - "9000:9000"   # HDFS IPC
-      - "8088:8088"   # YARN ResourceManager Web UI
-      - "19888:19888" # MapReduce Job History
+      - "9870:9870"
+      - "9000:9000"
+      - "8088:8088"
+      - "19888:19888"
     volumes:
       - namenode_data:/hadoop/dfs/name
       - ./data:/data
     networks:
       - hadoop_net
     restart: unless-stopped
+    mem_limit: 2g
+    memswap_limit: 2g
 
   secondarynamenode:
     build: .
@@ -30,7 +32,7 @@ services:
     environment:
       - NODE_TYPE=secondarynamenode
     ports:
-      - "9868:9868"   # Secondary NameNode Web UI
+      - "9868:9868"
     volumes:
       - secondarynamenode_data:/hadoop/dfs/secondary
     networks:
@@ -38,6 +40,8 @@ services:
     depends_on:
       - namenode
     restart: unless-stopped
+    mem_limit: 1g
+    memswap_limit: 1g
 
   datanode1:
     build: .
@@ -46,8 +50,8 @@ services:
     environment:
       - NODE_TYPE=datanode
     ports:
-      - "9864:9864"   # DataNode Web UI
-      - "8042:8042"   # NodeManager Web UI
+      - "9864:9864"
+      - "8042:8042"
     volumes:
       - datanode1_data:/hadoop/dfs/data
     networks:
@@ -55,6 +59,8 @@ services:
     depends_on:
       - namenode
     restart: unless-stopped
+    mem_limit: 2g
+    memswap_limit: 2g
 
   datanode2:
     build: .
@@ -72,6 +78,8 @@ services:
     depends_on:
       - namenode
     restart: unless-stopped
+    mem_limit: 2g
+    memswap_limit: 2g
 
   datanode3:
     build: .
@@ -89,6 +97,8 @@ services:
     depends_on:
       - namenode
     restart: unless-stopped
+    mem_limit: 2g
+    memswap_limit: 2g
 
 volumes:
   namenode_data:

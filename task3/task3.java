@@ -20,15 +20,13 @@ import java.util.*;
  *
  * This is analogous to your Task 3 on baskets.csv.
  */
-public class Task3_PCY {
+public class task3 {
 
     static final int SUPPORT_THRESHOLD = 3;   // minimum support to be "frequent"
     static final int NUM_BUCKETS = 100;        // number of hash buckets
 
-    // =========================================================================
     // SHARED UTILITY: Hash function for a pair of items
     // A good hash spreads pairs evenly across buckets
-    // =========================================================================
     static int hashPair(String itemA, String itemB, int numBuckets) {
         // Use a polynomial hash of the combined string
         String combined = itemA.compareTo(itemB) < 0
@@ -41,14 +39,10 @@ public class Task3_PCY {
         return Math.abs(hash);
     }
 
-    // =========================================================================
     // PASS 1: Count items and hash pairs into buckets
-    // =========================================================================
     public static class PCYPass1 {
 
-        // ---------------------------------------------------------------------
         // Mapper: emit (item, 1) for each item AND ("BUCKET_X", 1) for each pair
-        // ---------------------------------------------------------------------
         public static class Pass1Mapper extends Mapper<Object, Text, Text, IntWritable> {
 
             private static final IntWritable ONE = new IntWritable(1);
@@ -81,10 +75,8 @@ public class Task3_PCY {
             }
         }
 
-        // ---------------------------------------------------------------------
         // Combiner: pre-aggregate counts locally before sending to reducer
         // This is optional but greatly reduces network traffic
-        // ---------------------------------------------------------------------
         public static class Pass1Combiner extends Reducer<Text, IntWritable, Text, IntWritable> {
 
             @Override
@@ -96,10 +88,8 @@ public class Task3_PCY {
             }
         }
 
-        // ---------------------------------------------------------------------
         // Reducer: sum up counts for each item and each bucket
         // Output: "ITEM_X  count" or "BUCKET_X  count"
-        // ---------------------------------------------------------------------
         public static class Pass1Reducer extends Reducer<Text, IntWritable, Text, IntWritable> {
 
             @Override
@@ -123,7 +113,7 @@ public class Task3_PCY {
             conf.setInt("num.buckets", NUM_BUCKETS);
 
             Job job = Job.getInstance(conf, "PCY Pass 1");
-            job.setJarByClass(Task3_PCY.class);
+            job.setJarByClass(task3.class);
 
             job.setMapperClass(Pass1Mapper.class);
             job.setReducerClass(Pass1Reducer.class);
@@ -138,18 +128,14 @@ public class Task3_PCY {
         }
     }
 
-    // =========================================================================
     // PASS 2: Count only candidate pairs
     // A pair (A, B) is a candidate if:
     //   1. Both A and B are frequent items (from Pass 1)
     //   2. Their hash bucket was frequent (from Pass 1)
-    // =========================================================================
     public static class PCYPass2 {
 
-        // ---------------------------------------------------------------------
         // Mapper: re-read baskets, only emit pairs that pass the bitmap filter
         // The frequent items and bitmap are loaded from Pass 1 output
-        // ---------------------------------------------------------------------
         public static class Pass2Mapper extends Mapper<Object, Text, Text, IntWritable> {
 
             private Set<String> frequentItems = new HashSet<>();
@@ -200,9 +186,7 @@ public class Task3_PCY {
             }
         }
 
-        // ---------------------------------------------------------------------
         // Combiner: same pattern as Pass 1
-        // ---------------------------------------------------------------------
         public static class Pass2Combiner extends Reducer<Text, IntWritable, Text, IntWritable> {
 
             @Override
@@ -214,10 +198,8 @@ public class Task3_PCY {
             }
         }
 
-        // ---------------------------------------------------------------------
         // Reducer: sum and filter by support threshold
         // Output: "itemA|itemB  count" for all frequent pairs
-        // ---------------------------------------------------------------------
         public static class Pass2Reducer extends Reducer<Text, IntWritable, Text, IntWritable> {
 
             private int supportThreshold;
@@ -245,7 +227,7 @@ public class Task3_PCY {
             conf.setInt("num.buckets", NUM_BUCKETS);
 
             Job job = Job.getInstance(conf, "PCY Pass 2");
-            job.setJarByClass(Task3_PCY.class);
+            job.setJarByClass(task3.class);
 
             job.setMapperClass(Pass2Mapper.class);
             job.setReducerClass(Pass2Reducer.class);
@@ -260,12 +242,10 @@ public class Task3_PCY {
         }
     }
 
-    // =========================================================================
     // MAIN: Run Pass 1 then Pass 2
-    // =========================================================================
     public static void main(String[] args) throws Exception {
         if (args.length < 3) {
-            System.err.println("Usage: Task3_PCY <input> <pass1_output> <pass2_output> [--no-combiner]");
+            System.err.println("Usage: task3 <input> <pass1_output> <pass2_output> [--no-combiner]");
             System.exit(1);
         }
 

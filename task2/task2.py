@@ -16,21 +16,19 @@ from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 import sys
 import math
+import os
+import matplotlib.pyplot as plt
 
-# =============================================================================
 # SETUP
-# =============================================================================
 conf = SparkConf().setAppName("SalesAnalysis").setMaster("local[*]")
 sc = SparkContext(conf=conf)
 spark = SparkSession(sc)
 sc.setLogLevel("ERROR")  # suppress noisy Spark logs
 
-input_path = sys.argv[1] if len(sys.argv) > 1 else "sales.csv"
+input_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "baskets.csv")
 
-# =============================================================================
 # PART A: RDDs
 # Never use DataFrames here - only RDD operations
-# =============================================================================
 
 raw_rdd = sc.textFile(input_path)
 
@@ -53,10 +51,8 @@ def parse_line(line):
 
 parsed_rdd = data_rdd.map(parse_line)
 
-# -----------------------------------------------------------------------------
 # f1: Top 10 customers who bought the largest number of DISTINCT products
 # Pattern: group by customer -> collect distinct products -> count -> sort
-# -----------------------------------------------------------------------------
 def f1(rdd, output_folder):
     result = (
         rdd
@@ -78,25 +74,20 @@ def f1(rdd, output_folder):
       .saveAsTextFile(output_folder)
 
     # Visualize
-    try:
-        import matplotlib.pyplot as plt
-        customers = [r[0] for r in result]
-        counts    = [r[1] for r in result]
-        plt.figure(figsize=(10, 5))
-        plt.bar(customers, counts, color='steelblue')
-        plt.title("Top 10 Customers by Distinct Products")
-        plt.xlabel("Customer ID")
-        plt.ylabel("Distinct Products")
-        plt.tight_layout()
-        plt.savefig("f1_chart.png")
-        print("  Chart saved to f1_chart.png")
-    except ImportError:
-        print("  matplotlib not available, skipping chart")
 
-# -----------------------------------------------------------------------------
+    customers = [r[0] for r in result]
+    counts    = [r[1] for r in result]
+    plt.figure(figsize=(10, 5))
+    plt.bar(customers, counts, color='steelblue')
+    plt.title("Top 10 Customers by Distinct Products")
+    plt.xlabel("Customer ID")
+    plt.ylabel("Distinct Products")
+    plt.tight_layout()
+    plt.savefig("f1_chart.png")
+    print("  Chart saved to f1_chart.png")
+
 # f2: Number of shopping baskets (unique customer+date combos) per month
 # Pattern: group by (customer, date) to find baskets, then count by month
-# -----------------------------------------------------------------------------
 def f2(rdd, output_folder):
     result = (
         rdd
@@ -116,26 +107,20 @@ def f2(rdd, output_folder):
       .map(lambda r: f"{r[0]},{r[1]}") \
       .saveAsTextFile(output_folder)
 
-    try:
-        import matplotlib.pyplot as plt
-        months = [r[0] for r in result]
-        counts = [r[1] for r in result]
-        plt.figure(figsize=(10, 5))
-        plt.plot(months, counts, marker='o', color='darkorange')
-        plt.title("Shopping Baskets per Month")
-        plt.xlabel("Month")
-        plt.ylabel("Number of Baskets")
-        plt.xticks(months)
-        plt.tight_layout()
-        plt.savefig("f2_chart.png")
-        print("  Chart saved to f2_chart.png")
-    except ImportError:
-        print("  matplotlib not available, skipping chart")
+    months = [r[0] for r in result]
+    counts = [r[1] for r in result]
+    plt.figure(figsize=(10, 5))
+    plt.plot(months, counts, marker='o', color='darkorange')
+    plt.title("Shopping Baskets per Month")
+    plt.xlabel("Month")
+    plt.ylabel("Number of Baskets")
+    plt.xticks(months)
+    plt.tight_layout()
+    plt.savefig("f2_chart.png")
+    print("  Chart saved to f2_chart.png")
 
-# -----------------------------------------------------------------------------
 # f3: Most frequent PAIR of products in each month
 # Pattern: for each basket -> generate all pairs -> count by (month, pair) -> find max per month
-# -----------------------------------------------------------------------------
 def get_pairs(items):
     """Generate all unique 2-item combinations from a list"""
     items = sorted(set(items))  # sort so (A,B) and (B,A) are the same pair
@@ -175,15 +160,32 @@ def f3(rdd, output_folder):
     for month, (pair, count) in most_frequent:
         print(f"  Month {month}: {pair} (count={count})")
 
+    months = [r[0] for r in most_frequent]
+    pairs  = [str(r[1][0]) for r in most_frequent]
+    counts = [r[1][1] for r in most_frequent]
+
+    plt.figure(figsize=(10, 5))
+    plt.bar(months, counts, color='mediumpurple')
+
+    plt.title("Most Frequent Product Pair per Month")
+    plt.xlabel("Month")
+    plt.ylabel("Pair Frequency")
+
+    # label bars with pair names
+    for i, txt in enumerate(pairs):
+        plt.text(months[i], counts[i], txt, ha='center', va='bottom', fontsize=8, rotation=45)
+
+    plt.tight_layout()
+    plt.savefig("f3_chart.png")
+    print("  Chart saved to f3_chart.png")
+
     sc.parallelize(most_frequent) \
       .map(lambda r: f"{r[0]},{r[1][0]},{r[1][1]}") \
       .saveAsTextFile(output_folder)
 
-# -----------------------------------------------------------------------------
 # f4: Customer with most IRREGULAR purchasing behavior
 # Irregularity = largest std deviation of items purchased per day
 # Pattern: group by (customer, date) -> count items -> compute stddev per customer
-# -----------------------------------------------------------------------------
 def stddev(values):
     n = len(values)
     if n < 2:
@@ -215,6 +217,23 @@ def f4(rdd, output_folder):
     print("\n=== f4: Most irregular customer ===")
     print(f"  Customer {most_irregular[0]} with std dev = {most_irregular[1]:.4f}")
 
+    top_10 = customer_stddev.take(10)
+
+    customers = [r[0] for r in top_10]
+    stds      = [r[1] for r in top_10]
+
+    plt.figure(figsize=(10, 5))
+    plt.bar(customers, stds, color='tomato')
+
+    plt.title("Top 10 Most Irregular Customers")
+    plt.xlabel("Customer ID")
+    plt.ylabel("Std Deviation of Daily Purchases")
+    plt.xticks(rotation=45)
+
+    plt.tight_layout()
+    plt.savefig("f4_chart.png")
+    print("  Chart saved to f4_chart.png")
+
     customer_stddev.map(lambda r: f"{r[0]},{r[1]:.4f}") \
                    .saveAsTextFile(output_folder)
 
@@ -225,13 +244,14 @@ f3(parsed_rdd, "output/f3")
 f4(parsed_rdd, "output/f4")
 
 
-# =============================================================================
 # PART B: DataFrames
 # Re-implement the same functions using DataFrame API
-# =============================================================================
 
 df = spark.read.csv(input_path, header=True, inferSchema=True)
 # Expected columns: customer_id, date, product, year, month, day
+df = df.withColumnRenamed("Member_number", "customer_id") \
+       .withColumnRenamed("Date", "date") \
+       .withColumnRenamed("itemDescription", "product")
 
 print("\n\n=== PART B: DataFrames ===")
 
